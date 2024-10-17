@@ -1,0 +1,148 @@
+USE [MCET_30_Jun_2020]
+GO
+
+/****** Object:  Table [dbo].[RD_FDP]    Script Date: 9/24/2020 9:51:13 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+SET ANSI_PADDING ON
+GO
+
+CREATE TABLE [dbo].[RD_FDP](
+	[FID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [char](10) NOT NULL,
+	[Department] [char](2) NULL,
+	[FDPTitle] [varchar](100) NOT NULL,
+	[Organizedby] [varchar](100) NOT NULL,
+	[Sdate] [datetime] NOT NULL,
+	[Edate] [datetime] NOT NULL,
+	[NoOfDays] [int] NULL,
+	[AcademicYear] int NOT NULL,
+	[Sem] [Char](1) NOT NULL,
+	[CreatedUser] [varchar](20) NOT NULL,
+	[CreatedTime] [datetime] NOT NULL,
+	[Status] [char](1) NULL
+) ON [PRIMARY]
+
+GO
+
+SET ANSI_PADDING OFF
+GO
+
+
+Alter procedure sp_InsertRDFDP
+
+(@CUser varchar(20),
+
+@Name char(10),
+
+@FDPTitle varchar(100),
+
+@Organizedby varchar(100),
+
+@Sdate datetime,
+
+@Edate datetime,
+
+@NoOfDays int,
+@iAcaYear int,
+@Sem char(1),
+@iFID int
+
+)  as
+
+BEGIN
+
+	declare @Department as char(2)
+
+	set @Department=(select Department from Staff where StaffID in(@CUser))
+
+	if(@iFID =0)
+
+	Begin
+
+		insert into RD_FDP(Name,Department,FDPTitle,Organizedby,Sdate,
+
+		Edate,NoOfDays,AcademicYear,Sem,CreatedUser,CreatedTime,Status) values
+
+		(@Name,@Department,@FDPTitle,@Organizedby,@Sdate,@Edate,@NoOfDays,@iAcaYear,@Sem,@CUser,GETDATE(),'A')
+
+	End
+
+	else
+
+	Begin
+
+		Update RD_FDP set Name =@Name,Department =@Department,FDPTitle =@FDPTitle,Organizedby =@Organizedby,
+		Sdate=@Sdate,Edate =@Edate, 
+		NoOfDays  =@NoOfDays,Sem =@Sem, AcademicYear = @iAcaYear
+
+		where FID=@iFID
+
+	End
+
+END
+
+
+
+Alter procedure sp_GETFDP
+
+as
+
+BEGIN
+
+select FID,
+
+S.StaffName +' ' +S.Initial  +'& '+ d.DeptName as  Faculty,
+
+RC.Department,
+
+FDPTitle,
+
+Organizedby,
+
+Upper(REPLACE(CONVERT(VARCHAR(11), Sdate, 106), ' ', ' - ')) as sDate,
+
+Upper(REPLACE(CONVERT(VARCHAR(11), Edate, 106), ' ', ' - ')) as eDate,
+
+NoOfDays ,B.AcademicYear as AcademicYear,
+CASE RC.sem
+    WHEN 'O' THEN 'Odd'
+    WHEN 'E' THEN 'Even'
+	End as [Sem]
+from RD_FDP as RC
+inner join staff as s on s.StaffID = RC.Name
+inner join BatchYear as B on B.YearID = RC.AcademicYear
+inner join Department as D on D.DeptCode = S.Department
+where RC.Status='A'
+
+END
+
+
+
+Alter procedure sp_GetFDPBasedId
+
+(@iFID int)
+
+as
+
+BEGIN
+
+select Name,
+
+Department,
+
+FDPTitle,
+
+Organizedby,
+
+CONVERT(VARCHAR(10), Sdate, 103) as sDate,
+
+CONVERT(VARCHAR(10), Edate, 103) as eDate,
+
+NoOfDays ,AcademicYear,Sem  from RD_FDP where FID=@iFID
+
+END

@@ -1,0 +1,125 @@
+USE [MCET_30_Jun_2020]
+GO
+
+/****** Object:  Table [dbo].[RD_OnlineCourses_Faculty]    Script Date: 9/24/2020 10:17:20 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+SET ANSI_PADDING ON
+GO
+
+CREATE TABLE [dbo].[RD_OnlineCourses_Faculty](
+	[OID] [int] IDENTITY(1,1) NOT NULL,
+	[Department] [char](2) NOT NULL,
+	[Name] [varchar](15) NOT NULL,
+	[CourseName] [varchar](100) NOT NULL,
+	[Organizedby] [varchar](100) NOT NULL,
+	[DateofCompletion] [datetime] NOT NULL,
+	[Courseduration] [varchar](20) NOT NULL,
+	[Grade] [varchar](20) NOT NULL,
+	[AcademicYear] int NOT NULL,
+	[Sem] [Char](1) NOT NULL,
+	[CreatedUser] [varchar](20) NOT NULL,
+	[CreatedTime] [datetime] NOT NULL,
+	[Status] [char](1) NULL
+) ON [PRIMARY]
+
+GO
+
+SET ANSI_PADDING OFF
+GO
+
+
+Alter procedure [dbo].[sp_InsertOnlineCourses_Faculty]
+
+(@CUser varchar(20),
+
+@Name varchar(15),
+
+@CourseName varchar(100),
+
+@Organizedby varchar(100),
+
+@DateofCompletion datetime,
+
+@Courseduration varchar(20),
+
+@Grade varchar(20),@iOID int,@iAcaYear int,
+@Sem char(1)
+)  
+
+as
+
+BEGIN
+
+	declare @Department as char(2)
+
+	set @Department=(select Department from Staff where StaffID in(@CUser))
+
+	if(@iOID =0)
+
+	Begin
+
+		insert into RD_OnlineCourses_Faculty(Department,Name,CourseName,Organizedby,DateofCompletion,Courseduration,Grade,AcademicYear,Sem,CreatedUser,CreatedTime,Status) values
+
+		(@Department,@Name,@CourseName,@Organizedby,@DateofCompletion,@Courseduration,@Grade,@iAcaYear,@Sem,@CUser,GETDATE(),'A')
+
+	End
+
+	else
+
+	Begin
+
+
+
+		Update RD_OnlineCourses_Faculty set Name =@Name,CourseName =@CourseName,Organizedby =@Organizedby,
+		Sem =@Sem, AcademicYear = @iAcaYear,
+		DateofCompletion=@DateofCompletion,Courseduration=@Courseduration,Grade=@Grade,Department=@Department where OID=@iOID
+
+	End
+
+END
+
+
+Alter procedure sp_GETOnlineCoursesFaculty
+as
+BEGIN
+select OID,Name,s.StaffName + ' ' + S.Initial +'/'+ sd.Designation as StaffName,
+rd.CourseName,Organizedby,Courseduration,Grade,Upper(REPLACE(CONVERT(VARCHAR(11), DateofCompletion, 106), ' ', ' - ')) as DOC
+,B.AcademicYear as AcademicYear,
+CASE rd.sem
+    WHEN 'O' THEN 'Odd'
+    WHEN 'E' THEN 'Even'
+	End as [Sem]
+from RD_OnlineCourses_Faculty as RD inner join Staff as S on S.StaffID=Rd.Name
+inner join Staff_Designation  as SD  on SD.DesgCode = s.Designation
+inner join BatchYear as B on B.YearID = RD.AcademicYear
+where Rd.Status='A'
+END
+
+
+
+Alter procedure sp_GETOnlineCoursesFacultyBasedId
+
+(@iOID int)
+
+as
+
+BEGIN
+
+select OID,Name,s.StaffName + ' ' + S.Initial +'/'+ sd.Designation as StaffName,
+
+rd.CourseName,Organizedby,Courseduration,Grade,
+
+CONVERT(VARCHAR(10), DateofCompletion, 103) as DOC,AcademicYear,Sem
+
+from RD_OnlineCourses_Faculty as RD inner join Staff as S on S.StaffID=Rd.Name
+
+inner join Staff_Designation  as SD  on SD.DesgCode = s.Designation
+
+where Rd.Status='A' and OID = @iOID
+
+END

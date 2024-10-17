@@ -1,0 +1,153 @@
+USE [MCET_30_Jun_2020]
+GO
+
+/****** Object:  Table [dbo].[RD_ConsultancyActivities]    Script Date: 9/24/2020 7:06:49 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+SET ANSI_PADDING ON
+GO
+
+CREATE TABLE [dbo].[RD_ConsultancyActivities](
+	[CID] [int] IDENTITY(1,1) NOT NULL,
+	[Faculty] [varchar](300) NOT NULL,
+	[Department] [char](2) NOT NULL,
+	[NatureofConsultancy] [varchar](100) NOT NULL,
+	[ClientOrganization] [varchar](100) NOT NULL,
+	[DateOfApproval] [datetime] NOT NULL,
+	[DateofCompletion] [datetime] NOT NULL,
+	[RevenueGenerated ] [decimal](18, 2) NOT NULL,
+	[AcademicYear] int NOT NULL,
+	[Sem] [Char](1) NOT NULL,
+	[CreatedUser] [varchar](20) NOT NULL,
+	[CreatedTime] [datetime] NOT NULL,
+	[Status] [char](1) NULL
+) ON [PRIMARY]
+
+GO
+
+SET ANSI_PADDING OFF
+GO
+
+
+
+Alter procedure sp_InsertConsultancyActivities
+
+(@CUser varchar(20),
+
+@Faculty char(10),
+
+@NatureofConsultancy varchar(100),
+
+@ClientOrganization varchar(100),
+
+@DateOfApproval datetime,
+
+@DateofCompletion datetime,
+
+@RevenueGenerated decimal(18,2),
+
+@iCID int,@iAcaYear int,
+@Sem char(1)
+
+)  
+
+as
+
+BEGIN
+
+	declare @Department as char(2)
+
+	set @Department=(select Department from Staff where StaffID in(@CUser))
+
+	if(@iCID =0)
+
+	Begin
+
+		insert into RD_ConsultancyActivities(Faculty,Department,NatureofConsultancy,ClientOrganization,DateOfApproval,
+
+		DateofCompletion,RevenueGenerated,CreatedUser,CreatedTime,Status,AcademicYear,Sem) values
+
+		(@Faculty,@Department,@NatureofConsultancy,@ClientOrganization,@DateOfApproval,@DateofCompletion,@RevenueGenerated,@CUser,GETDATE(),'A',@iAcaYear,@Sem)
+
+	End
+
+	else
+
+	Begin
+
+		Update RD_ConsultancyActivities set Faculty =@Faculty,Department =@Department,NatureofConsultancy =@NatureofConsultancy,ClientOrganization =@ClientOrganization,
+
+		DateOfApproval=@DateOfApproval,DateofCompletion =@DateofCompletion, 
+		Sem =@Sem, AcademicYear = @iAcaYear,
+		RevenueGenerated  =@RevenueGenerated
+
+		where CID=@iCID
+
+	End
+
+END
+
+
+
+Alter procedure sp_GETConsultancyActivities
+
+as
+
+BEGIN
+
+select CID,Faculty,
+
+--S.StaffName +' ' +S.Initial as  Faculty,
+
+RC.Department,
+
+NatureofConsultancy,
+
+ClientOrganization,
+
+Upper(REPLACE(CONVERT(VARCHAR(11), DateOfApproval, 106), ' ', ' - ')) as DOA,
+
+Upper(REPLACE(CONVERT(VARCHAR(11), DateofCompletion, 106), ' ', ' - ')) as DOC,
+
+RevenueGenerated ,B.AcademicYear as AcademicYear,
+CASE RC.sem
+    WHEN 'O' THEN 'Odd'
+    WHEN 'E' THEN 'Even'
+	End as [Sem]
+
+from RD_ConsultancyActivities as RC --inner join Staff as S on S.StaffID=Rd.Author
+inner join BatchYear as B on B.YearID = RC.AcademicYear
+
+--inner join staff as s on s.StaffID = RC.faculty
+
+where Status='A'
+
+END
+
+
+
+
+
+ALter procedure sp_GetConsultancyActivitiesBasedId
+
+(@iCID int)
+
+as
+
+BEGIN
+
+select Faculty,NatureofConsultancy,
+
+ClientOrganization,
+
+CONVERT(VARCHAR(10), DateOfApproval, 103) as DOA,
+
+CONVERT(VARCHAR(10), DateofCompletion, 103) as DOC,
+
+RevenueGenerated,AcademicYear,Sem  from RD_ConsultancyActivities where CID=@iCID
+
+END
